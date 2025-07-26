@@ -1,4 +1,5 @@
-# app.py
+# searchapi/app.py
+
 from flask import Flask, request, jsonify
 import requests
 import os
@@ -10,13 +11,19 @@ def get_review_urls():
     try:
         data = request.get_json()
         hotel_name = data.get("hotel_name")
-        serpapi_key = os.environ.get("SERPAPI_KEY")  # Load from environment
+        serpapi_key = os.environ.get("SERPAPI_KEY")  # Loaded from Render env var
 
-        print("Input Hotel:", hotel_name)
-        print("Using SerpAPI Key:", serpapi_key)
+        if not hotel_name:
+            return jsonify({"review_urls": ["Missing 'hotel_name' in request body."]}), 400
 
+        if not serpapi_key:
+            return jsonify({"review_urls": ["Missing 'SERPAPI_KEY' in environment variables."]}), 500
+
+        print("🔍 Searching reviews for:", hotel_name)
+        print("🔑 SerpAPI Key (masked):", serpapi_key[:6] + "****")
+
+        # Build query
         query = f"{hotel_name} hotel guest reviews and experiences"
-        serpapi_url = "https://serpapi.com/search"
         params = {
             "engine": "google",
             "q": query,
@@ -26,12 +33,12 @@ def get_review_urls():
             "gl": "us"
         }
 
-        response = requests.get(serpapi_url, params=params, timeout=10)
-        print("Status Code:", response.status_code)
-        print("Response:", response.text)
+        print("📡 Sending request to SerpAPI...")
+        response = requests.get("https://serpapi.com/search", params=params, timeout=10)
 
+        print("🧾 Status Code:", response.status_code)
         if response.status_code != 200:
-            return jsonify({"review_urls": [f"Error: SerpAPI returned status {response.status_code}"]})
+            return jsonify({"review_urls": [f"SerpAPI error {response.status_code}"]}), 502
 
         results = response.json()
         review_urls = [
@@ -41,7 +48,15 @@ def get_review_urls():
             )
         ]
 
-        return jsonify({"review_urls": review_urls if review_urls else ["No review-like links found."]})
+        print("✅ Extracted URLs:", review_urls)
+        return jsonify({
+            "review_urls": review_urls if review_urls else ["No review-like links found."]
+        })
 
     except Exception as e:
-        return jsonify({"review_urls": [f"Exception occurred: {str(e)}"]})
+        print("❌ Exception:", str(e))
+        return jsonify({"review_urls": [f"Exception occurred: {str(e)}"]}), 500
+
+# Entry point for Render
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
