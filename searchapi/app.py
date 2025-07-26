@@ -56,6 +56,7 @@ def get_review_urls():
     except Exception as e:
         print("❌ Exception:", str(e))
         return jsonify({"review_urls": [f"Exception occurred: {str(e)}"]}), 500
+        
 
 # Entry point for Render
 if __name__ == "__main__":
