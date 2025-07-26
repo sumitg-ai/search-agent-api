@@ -1,6 +1,7 @@
 # app.py
 from flask import Flask, request, jsonify
 import requests
+import os
 
 app = Flask(__name__)
 
@@ -9,7 +10,7 @@ def get_review_urls():
     try:
         data = request.get_json()
         hotel_name = data.get("hotel_name")
-        serpapi_key = data.get("serpapi_key")
+        serpapi_key = os.environ.get("SERPAPI_KEY")  # Load from environment
 
         print("Input Hotel:", hotel_name)
         print("Using SerpAPI Key:", serpapi_key)
